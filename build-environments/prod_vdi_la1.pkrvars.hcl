@@ -1,0 +1,8 @@
+vcenter_server              = "abcla1vcn1.abc.corp"
+datacenter                  = "abcLA1"
+datastore                   = "abcla1san2-rdma-vmfs6-vol1"
+cluster                     = "abcLA1-Cluster3"
+folder                      = "PackerImages"
+network                     = "vl-1025-abc-vm-packerbuild"
+content_library_iso_source  = "abcLA1-ContentLIbrary-ProdInfra"
+content_library_destination = "abcLA1-ContentLIbrary-ProdInfra"

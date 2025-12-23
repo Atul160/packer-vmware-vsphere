@@ -1,0 +1,28 @@
+name: PROD - Windows Server 2022 Builds
+
+on:
+  schedule:
+    # Runs every 21st day of the month at 2:00 AM UTC
+    - cron: "0 2 21 * *"
+
+  workflow_dispatch:
+
+jobs:
+  build-win2022-gui:
+    uses: take-two/Workflows/.github/workflows/packer-vsphere.yml@master
+    secrets: inherit
+    with:
+      machine-prefix: windows-server-2022-gui # The name of the artifact used in the content library, and what is used within the build image name
+      template-dir: infra/windows-server-2022 # Tells packer where to find the template code
+      install-type: default_gui # Tells packer which OS type you want to install
+      environment: prod_infra # Tell GitHub Actions which environment to deploy this to, and which runners to use
+
+  build-win2022-core:
+    needs: build-win2022-gui           # <--- serialize: wait for GUI job to complete
+    uses: take-two/Workflows/.github/workflows/packer-vsphere.yml@master
+    secrets: inherit
+    with:
+      machine-prefix: windows-server-2022-core # The name of the artifact used in the content library, and what is used within the build image name
+      template-dir: infra/windows-server-2022 # Tells packer where to find the template code
+      install-type: default_core # Tells packer which OS type you want to install
+      environment: prod_infra # Tell GitHub Actions which environment to deploy this to, and which runners to use

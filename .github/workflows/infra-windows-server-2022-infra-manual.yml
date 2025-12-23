@@ -1,0 +1,24 @@
+name: PROD - Windows Server 2022 Builds - Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+        install-type:
+            description: 'The type of Windows Server 2022 to install'
+            type: choice
+            required: true
+            default: 'default_gui_test'
+            options:
+                - default_gui
+                - default_core
+                - test_gui
+                - test_core
+jobs:
+    build-win2022-gui:
+        uses:                   take-two/Workflows/.github/workflows/packer-vsphere.yml@master
+        secrets:                inherit
+        with:
+            machine-prefix:     windows-server-2022-${{ inputs.install-type }}    # The name of the artifact used in the content library, and what is used within the build image name
+            template-dir:       infra/windows-server-2022                         # Tells packer where to find the template code
+            install-type:       ${{ inputs.install-type }}                        # Tells packer which OS type you want to install
+            environment:        prod_infra                                        # Tell GitHub Actions which environment to deploy this to, and which runners to use

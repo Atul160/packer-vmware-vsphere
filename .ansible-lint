@@ -1,0 +1,20 @@
+---
+profile: production
+sarif_file: result.sarif
+loop_var_prefix: ^(__|{role}_)
+var_naming_pattern: ^[a-z_][a-z0-9_]*$
+use_default_rules: true
+offline: false
+
+exclude_paths:
+  - .github/
+
+enable_list:
+  - args
+  - empty-string-compare
+  - no-log-password
+  - no-same-owner
+  - yaml
+
+warn_list:
+  - experimental

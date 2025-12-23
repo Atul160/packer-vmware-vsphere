@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "ms-vscode-remote.remote-containers", // Dev Containers
+    "GitHub.remotehub", // GitHub Remote Repositories
+    "GitHub.vscode-pull-request-github", //GitHub Pull Requests
+    "Github.vscode-github-actions", // GitHub Actions
+    "esbenp.prettier-vscode", // Prettier
+    "hashicorp.hcl", // HCL
+    "hashicorp.terraform", // Terraform
+    "ms-vscode.powershell", // PowerShell
+    "redhat.ansible", // Ansible
+    "vscode.json-language-features", // JSON
+    "exiasr.hadolint", //Hadolint
+    "bridgecrew.checkov" //Checkov
+  ]
+}

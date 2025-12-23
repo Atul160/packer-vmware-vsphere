@@ -1,0 +1,152 @@
+---
+# Tasks for setting custom facts.
+- name: Setting custom facts.
+  ansible.builtin.set_fact:
+    enable_cloudinit: "{{ enable_cloudinit | default('false') }}"
+
+# Tasks for removing the cloud-init package.
+- name: Removing the cloud-init package.
+  ansible.builtin.apt:
+    name: cloud-init
+    state: absent
+  when: ansible_distribution == 'Ubuntu' and enable_cloudinit == 'false'
+
+# Tasks to clean the audit logs.
+- name: Cleaning the audit logs.
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /var/log/audit/audit.log
+    - /var/log/auth.log
+    - /var/log/btmp
+    - /var/log/dpkg.log
+    - /var/log/faillog
+    - /var/log/kern.log
+    - /var/log/lastlog
+    - /var/log/syslog
+    - /var/log/wtmp
+
+# Tasks to clean the persistent udev rules.
+- name: Cleaning persistent udev rules.
+  ansible.builtin.file:
+    path: /etc/udev/rules.d/70-persistent-net.rules
+    state: absent
+
+# Tasks to find the /tmp directories.
+- name: Finding the /tmp directories.
+  ansible.builtin.find:
+    paths:
+      - /tmp
+      - /var/tmp
+    file_type: any
+    excludes: 'ansible'
+  register: find_tmp_directories
+
+# Tasks to clean the /tmp directories.
+- name: Cleaning the /tmp directories.
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ find_tmp_directories.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+# Tasks to find the SSH host keys.
+- name: Finding the SSH host keys.
+  ansible.builtin.find:
+    paths: /etc/ssh
+    patterns: ssh_host_*
+  register: find_ssh_host_keys
+
+# Tasks to clean the SSH host keys.
+- name: Cleaning the SSH host keys.
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ find_ssh_host_keys.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+# Tasks to clean the machine-id.
+- name: Cleaning the machine-id.
+  block:
+    - name: Emptying the /etc/machine-id.
+      community.general.filesize:
+        path: /etc/machine-id
+        size: 0
+    - name: Removing /var/lib/dbus/machine-id.
+      ansible.builtin.file:
+        path: /var/lib/dbus/machine-id
+        state: absent
+    - name: Creating a symbolic link to /etc/machine-id.
+      ansible.builtin.file:
+        src: /etc/machine-id
+        dest: /var/lib/dbus/machine-id
+        state: link
+
+# Tasks to clean the shell history.
+- name: Cleaning the shell history.
+  block:
+    - name: Cleaning the shell history.
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.bash_history"
+        state: absent
+
+# Cleaning the shell history
+- name: Cleaning root bash history.
+  ansible.builtin.file:
+    path: /root/.bash_history
+    state: absent
+
+# Tasks to truncate hostname, hosts, and resolv.conf files and set hostname to localhost.
+- name: Truncate hostname, hosts, and resolv.conf files
+  ansible.builtin.command:
+    cmd: "truncate -s 0 {{ item }}"
+  loop:
+    - /etc/hostname
+    - /etc/hosts
+    - /etc/resolv.conf
+  ignore_errors: true
+
+- name: Set hostname to localhost
+  ansible.builtin.hostname:
+    name: localhost
+
+# Tasks to clean apt-get cache and unused packages.
+- name: Cleaning apt cache and unused packages
+  block:
+    - name: Clean apt cache
+      ansible.builtin.apt:
+        autoclean: yes
+    - name: Autoremove unused packages
+      ansible.builtin.apt:
+        autoremove: yes
+  when: ansible_distribution == 'Ubuntu'
+
+# Tasks to stop and disable puppet, clean up certs, and reset config.
+- name: Stop and disable Puppet service
+  ansible.builtin.service:
+    name: puppet
+    state: stopped
+    enabled: no
+  ignore_errors: true
+
+- name: Remove Puppet SSL certificates
+  ansible.builtin.file:
+    path: /etc/puppetlabs/puppet/ssl/
+    state: absent
+  ignore_errors: true
+
+- name: Reset Puppet configuration
+  ansible.builtin.copy:
+    dest: /etc/puppetlabs/puppet/puppet.conf
+    content: |
+      [main]
+      ca_server = puppet-ca.abc.corp
+      [agent]
+      server_list = puppet-adc.abc.corp:8140,puppet-edc.abc.corp:8140
+    owner: root
+    group: root
+    mode: "0644"
+  ignore_errors: true

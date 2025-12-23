@@ -1,0 +1,1 @@
+Import-Certificate -FilePath "c:\bin\PaloDecryptCert.cer" -CertStoreLocation Cert:\LocalMachine\Root -confirm:$false

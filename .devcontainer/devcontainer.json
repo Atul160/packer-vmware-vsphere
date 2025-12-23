@@ -1,0 +1,28 @@
+{
+  "name": "abc Packer Images",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,readonly,type=bind"
+  ],
+  "features": {
+    "ghcr.io/devcontainers/features/powershell:1": {},
+    "ghcr.io/devcontainers-contrib/features/ansible:2": {},
+    "ghcr.io/devcontainers-contrib/features/packer-asdf:2": {},
+    "ghcr.io/devcontainers-contrib/features/terraform-asdf:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.remotehub",
+        "GitHub.vscode-pull-request-github",
+        "Github.vscode-github-actions",
+        "hashicorp.hcl",
+        "hashicorp.terraform",
+        "ms-vscode.powershell",
+        "redhat.ansible"
+      ]
+    }
+  }
+}

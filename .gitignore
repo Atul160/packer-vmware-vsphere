@@ -1,0 +1,6 @@
+# secretvars.hcl
+.DS_Store
+id_ed25519
+# secrets/**
+# !secrets/*.example
+# result.sarif

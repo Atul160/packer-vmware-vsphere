@@ -1,0 +1,34 @@
+---
+# Tasks for unregistering from SUSE Customer Center.
+- name: Unregistering from SUSE Customer Center. # noqa no-changed-when
+  ansible.builtin.command:
+    cmd: "{{ item }}"
+  loop:
+    - SUSEConnect -d
+    - SUSEConnect --cleanup
+
+# Tasks for configuring SSH for public key authentication.
+- name: Configuring SSH for Public Key Authentication.
+  block:
+    - name: Deny SSH Root Login
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: ^PermitRootLogin
+        line: PermitRootLogin no
+    - name: Permit SSH Public Key Authentication
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: ^PubkeyAuthentication
+        line: PubkeyAuthentication yes
+
+# Tasks for setting the hostname.
+- name: Setting the hostname.
+  ansible.builtin.hostname:
+    name: localhost
+
+# Tasks for restarting the SSH daemon.
+- name: Restarting the SSH daemon.
+  ansible.builtin.systemd:
+    name: sshd
+    state: restarted
+    daemon_reload: true

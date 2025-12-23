@@ -1,0 +1,124 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "windows":{
+        "command": "pwsh.exe",
+    },
+    "command": "pwsh.exe",
+    "args": [
+        "-NoProfile"
+    ],
+    "tasks": [
+        {
+            "label": "Packer - Format",
+            "type": "shell",
+            "command": "packer fmt -recursive '${workspaceFolder}/infra/'",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Packer - Linux Validate",
+            "type": "shell",
+            "command": "packer init '${workspaceFolder}/infra/linux/${input:linux_image_name}' && packer validate -var-file='${workspaceFolder}/infra/linux/${input:linux_image_name}/install-types/${input:linux_install_type}/vars.pkrvars.hcl' -var-file='build-environments/${input:build_environment}.pkrvars.hcl' -var-file='secrets/${input:build_environment}.secrets.pkrvars.hcl' '${workspaceFolder}/infra/linux/${input:linux_image_name}/' 2>&1 | tee ${workspaceFolder}/logs/validate_${input:linux_image_name}_${input:linux_install_type}.log",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Packer - Linux Build",
+            "type": "shell",
+            "command": "packer init '${workspaceFolder}/infra/linux/${input:linux_image_name}' && packer build -var-file='${workspaceFolder}/infra/linux/${input:linux_image_name}/install-types/${input:linux_install_type}/vars.pkrvars.hcl' -var-file='build-environments/${input:build_environment}.pkrvars.hcl' -var-file='secrets/${input:build_environment}.secrets.pkrvars.hcl' -color=false '${workspaceFolder}/infra/linux/${input:linux_image_name}/' 2>&1 | tee ${workspaceFolder}/logs/build_${input:linux_image_name}_${input:linux_install_type}.log",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Packer - Linux Build (Force Overwrite)",
+            "type": "shell",
+            "command": "packer init '${workspaceFolder}/infra/linux/${input:linux_image_name}' && packer build -force -var-file='${workspaceFolder}/infra/linux/${input:linux_image_name}/install-types/${input:linux_install_type}/vars.pkrvars.hcl' -var-file='build-environments/${input:build_environment}.pkrvars.hcl' -var-file='secrets/${input:build_environment}.secrets.pkrvars.hcl' -color=false '${workspaceFolder}/infra/linux/${input:linux_image_name}/' 2>&1 | tee ${workspaceFolder}/logs/build_${input:linux_image_name}_${input:linux_install_type}.log",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "linux_install_type",
+            "description": "Install Type",
+            "type": "pickString",
+            "options": [
+                "focal-clone",
+                "focal-cloudinit",
+                "jammy-clone",
+                "jammy-cloudinit",
+                "noble-clone",
+                "noble-cloudinit"
+            ],
+            "default": "jammy-clone"
+        },
+        {
+            "id": "windows_install_type",
+            "description": "Install Type",
+            "type": "pickString",
+            "options": [
+                "default_gui",
+                "default_core"
+            ],
+            "default": "default"
+        },
+        {
+            "id": "linux_image_name",
+            "description": "Operating System Name",
+            "type": "pickString",
+            "options": [
+                "ubuntu-server"
+            ]
+        },
+        {
+            "id": "windows_image_name",
+            "description": "Operating System Name",
+            "type": "pickString",
+            "options": [
+                "windows-server-2016",
+                "windows-server-2019",
+                "windows-server-2022"
+            ]
+        },
+        {
+            "id": "build_environment",
+            "description": "Build Environment",
+            "type": "pickString",
+            "options": [
+                "prod_infra",
+                "prod_vdi"
+            ],
+            "default": "prod_infra"
+        }
+    ]
+}

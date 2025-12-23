@@ -1,0 +1,14 @@
+name: PROD - Windows Desktop 11 Builds
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-win11-gui:
+    uses: take-two/Workflows/.github/workflows/packer-vsphere.yml@master
+    secrets: inherit
+    with:
+      machine-prefix: windows-desktop-11-gui # The name of the artifact used in the content library, and what is used within the build image name
+      template-dir: infra/windows-desktop-11 # Tells packer where to find the template code
+      install-type: default_gui # Tells packer which OS type you want to install
+      environment: prod_infra_la1 # Tell GitHub Actions which environment to deploy this to, and which runners to use

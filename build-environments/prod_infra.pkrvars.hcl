@@ -1,0 +1,8 @@
+vcenter_server              = "abcadcvcn4.abc.corp"
+datacenter                  = "abcADC"
+datastore                   = "abcadcsan1-fc-vmfs6-vol8"
+cluster                     = "abcADC-Cluster10"
+folder                      = "PackerImages"
+network                     = "vl-1025-abc-vm-packerbuild"
+content_library_iso_source  = "abcADC-ContentLIbrary-ProdInfra"
+content_library_destination = "abcADC-ContentLIbrary-ProdInfra"

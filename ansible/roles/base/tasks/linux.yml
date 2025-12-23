@@ -1,0 +1,168 @@
+---
+# VMware Photon OS
+
+- name: VMware Photon OS
+  when: ansible_os_family == 'VMware Photon OS' and ansible_distribution_version | int >= 5
+  block:
+    - name: Updating the operating system.
+      ansible.builtin.command: tdnf -y update # noqa no-changed-when
+
+- name: VMware Photon OS (Legacy)
+  when: ansible_os_family == 'VMware Photon OS' and ansible_distribution_version | int <= 4
+  block:
+    - name: Updating repository URL # noqa no-changed-when
+      ansible.builtin.shell: |
+        cd /etc/yum.repos.d/
+        sed -i 's/dl.bintray.com\/vmware/packages.vmware.com\/photon\/$releasever/g' photon.repo photon-updates.repo photon-extras.repo photon-debuginfo.repo
+    - name: Updating the photon-repo.
+      ansible.builtin.command: tdnf -y update photon-repos # noqa no-changed-when
+    - name: Cleaning the cache.
+      ansible.builtin.command: tdnf clean all # noqa no-changed-when
+    - name: Making cache.
+      ansible.builtin.command: tdnf makecache # noqa no-changed-when
+    - name: Updating the operating system.
+      ansible.builtin.command: tdnf -y update # noqa no-changed-when
+
+- name: Photon - Additional Packages
+  when: ansible_os_family == 'VMware Photon OS'
+  block:
+    - name: Installing additional packages.
+      ansible.builtin.command: tdnf -y install {{ base_additional_packages[ansible_os_family] | join(' ') }} # noqa no-changed-when
+
+# Debian or derivatives.
+- name: Debian or derivatives
+  when: ansible_os_family == 'Debian'
+  block:
+    - name: Updating the operating system.
+      ansible.builtin.apt:
+        name: "*"
+        state: latest # noqa package-latest
+        force_apt_get: true
+        # update_cache: true
+
+    - name: Installing Cloud-init.
+      ansible.builtin.apt:
+        name: cloud-init
+        state: latest # noqa package-latest
+      when: ansible_os_family == 'Debian' and ansible_distribution_version | int >= 12
+
+    # Install additional packages
+    - name: Installing additional packages.
+      ansible.builtin.apt:
+        name: "{{ base_additional_packages[ansible_os_family] }}"
+        state: latest # noqa package-latest
+
+    # Remove any existing Puppet agent and install a specific version
+    - name: Remove existing Puppet packages
+      become: true
+      ansible.builtin.apt:
+        name:
+          - puppet
+          - puppet-agent
+          - puppet-common
+        state: absent
+        purge: yes
+        autoremove: yes
+        autoclean: yes
+
+    - name: Remove leftover Puppet directories
+      become: true
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/puppetlabs
+        - /etc/puppetlabs
+        - /var/lib/puppet
+
+    # Download Puppet .deb from internal Artifactory
+    - name: Download Puppet agent .deb
+      ansible.builtin.get_url:
+        url: "https://packages.gametools.dev/artifactory/abc-systems-tools-debs/pool/puppet-agent_7.34.0-1{{ ansible_lsb.codename }}_amd64.deb"
+        dest: /tmp/puppet7.deb
+        mode: '0644'
+        validate_certs: false
+
+    # Install Puppet agent with dependency handling
+    - name: Install Puppet agent from downloaded .deb
+      ansible.builtin.apt:
+        deb: /tmp/puppet7.deb
+        state: present
+      register: puppet_install_result
+
+    # Clean up the Puppet .deb artifact
+    - name: Remove Puppet installer artifact
+      ansible.builtin.file:
+        path: /tmp/puppet7.deb
+        state: absent
+
+# Red Hat Enterprise Linux or derivatives.
+- name: Checking the Red Hat Subscription Manager status.
+  when: ansible_distribution == 'RedHat'
+  ansible.builtin.command: subscription-manager status # noqa no-changed-when
+  register: result
+  failed_when: "'ERROR' in result.stderr"
+
+- name: Upgrade almalinux-release package.
+  when: ansible_distribution == 'AlmaLinux'
+  ansible.builtin.dnf:
+    name: almalinux-release
+    state: latest # noqa package-latest
+  become: true
+
+- name: Installing Cloud-init.
+  when: ansible_distribution == 'AlmaLinux' and ansible_distribution_version | int >= 8 and enable_cloudinit == 'true'
+  ansible.builtin.dnf:
+    name: cloud-init
+    state: latest # noqa package-latest
+
+- name: Redhat / Fedora
+  when:
+    - ansible_distribution == 'Fedora' and ansible_distribution_major_version | int >= 40
+    - ansible_os_family == 'RedHat' and ansible_distribution_major_version | int >= 8
+  block:
+    - name: Updating the operating system.
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest # noqa package-latest
+        update_cache: true
+
+    - name: Installing Cloud-init.
+      ansible.builtin.dnf:
+        name: cloud-init
+        state: latest # noqa package-latest
+      when: enable_cloudinit == 'true'
+
+    - name: Installing additional packages.
+      ansible.builtin.dnf:
+        name: "{{ base_additional_packages[ansible_os_family] }}"
+        state: latest # noqa package-latest
+
+- name: RedHat (Legacy)
+  when: ansible_os_family == 'RedHat' and ansible_distribution_major_version | int < 8
+  block:
+    - name: Updating the operating system.
+      ansible.builtin.yum:
+        name: "*"
+        state: latest # noqa package-latest
+        update_cache: true
+
+    - name: Installing additional packages.
+      ansible.builtin.yum:
+        name: "{{ base_additional_packages[ansible_os_family] }}"
+        state: latest # noqa package-latest
+
+# SUSE Linux Enterprise Server
+- name: SUSE Linux Enterprise Server
+  when: ansible_os_family == 'Suse'
+  block:
+    - name: Updating the operating system.
+      community.general.zypper:
+        name: "*"
+        state: latest
+        update_cache: true
+
+    - name: Installing additional packages.
+      community.general.zypper:
+        name: "{{ base_additional_packages[ansible_os_family] }}"
+        state: latest

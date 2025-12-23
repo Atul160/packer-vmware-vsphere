@@ -1,0 +1,5 @@
+# /etc/cron.d/puppet-csr
+
+# Job Definition
+# Creates the CSR attribute configuration on reboot, usesd for auto-signing of Puppet enrolment requests
+@reboot root /opt/puppet-csr.sh

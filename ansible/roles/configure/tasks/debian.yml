@@ -1,0 +1,126 @@
+---
+# Tasks for setting custom facts.
+- name: Setting custom facts.
+  ansible.builtin.set_fact:
+    enable_cloudinit: "{{ enable_cloudinit | default('false') }}"
+
+# Tasks for configuring SSH for public key authentication.
+- name: Configuring SSH for Public Key Authentication.
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: ^PubkeyAuthentication
+    line: PubkeyAuthentication yes
+
+# Tasks for setting the hostname.
+- name: Setting the hostname.
+  ansible.builtin.hostname:
+    name: localhost
+
+# Tasks for restarting the SSH daemon.
+- name: Restarting the SSH daemon.
+  ansible.builtin.systemd:
+    name: ssh
+    state: restarted
+    daemon_reload: true
+
+# Tasks for disabling systemd-tmpfiles.
+- name: Disabling systemd-tmpfiles.
+  ansible.builtin.replace:
+    path: /usr/lib/tmpfiles.d/tmp.conf
+    regexp: ^D
+    replace: "#D"
+
+# Tasks for configuring cloud-init.
+- name: Configuring cloud-init.
+  when: enable_cloudinit == 'true'
+  block:
+    - name: "Message: Configuring cloud-init"
+      ansible.builtin.debug:
+        msg: Configuring cloud-init
+    - name: Remove default cloud-init files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/cloud/cloud.cfg.d/subiquity-disable-cloudinit-networking.cfg
+        - /etc/cloud/cloud.cfg.d/99-installer.cfg
+        - /etc/netplan/00-installer-config.yaml
+      when: ansible_distribution == 'Ubuntu'
+    - name: Enable VMware Customization
+      ansible.builtin.blockinfile:
+        path: /etc/cloud/cloud.cfg
+        block: |
+          disable_vmware_customization: false
+    - name: Enable VMware Datasources
+      ansible.builtin.copy:
+        content: "datasource_list: [ VMware, OVF, None ]"
+        dest: /etc/cloud/cloud.cfg.d/90_dpkg.cfg
+        mode: "0600"
+- name: Replace dhcp with static for Debian
+  ansible.builtin.lineinfile:
+    path: /etc/network/interfaces
+    regexp: ^iface ens192 inet dhcp
+    state: absent
+  when: enable_cloudinit == 'true' and ansible_distribution == 'Debian'
+
+# Tasks for setting SSH keys to regenerate.
+- name: Setting SSH keys to regenerate.
+  ansible.builtin.copy:
+    dest: /etc/rc.local
+    content: |
+      #!/bin/bash
+      if test -z "$(find /etc/ssh/ -iname 'ssh_host_*_key*')"; then
+          dpkg-reconfigure openssh-server
+      fi
+      exit 0
+    mode: "0755"
+
+# Tasks for force setting the guest operating system information for VMware Tools.
+- name: Setting guest operating system information for VMware Tools.
+  ansible.builtin.blockinfile:
+    path: /etc/vmware-tools/tools.conf
+    block: |
+      [guestosinfo]
+      short-name = other5xLinux64Guest
+    create: true
+    mode: "0600"
+  when: ansible_distribution == 'Debian'
+
+# Tasks for configuring Puppet auto-enrol requiremnents
+- name: Configuring Puppet CSR attributes script
+  block:
+    - name: Copy Puppet CSR configuration script
+      ansible.builtin.copy:
+        src: ../../../../infra/scripts/ubuntu/puppet-csr.sh
+        dest: /opt/puppet-csr.sh
+        mode: "0700"
+    - name: Configure cron job
+      ansible.builtin.cron:
+        name: Set Puppet CSR cron job
+        special_time: reboot
+        job: /opt/puppet-csr.sh
+
+# Task for configuring DNS search domain in existing Netplan files
+- name: Ensure DNS search domain exists in existing Netplan configuration
+  block:
+    - name: Find existing Netplan configuration files
+      ansible.builtin.find:
+        paths: /etc/netplan
+        patterns: "*.yaml"
+      register: netplan_files
+    - name: Add or update nameservers configuration in Netplan
+      ansible.builtin.lineinfile:
+        path: "{{ item.path }}"
+        regexp: '^\s*nameservers:'
+        insertafter: '^\s*dhcp4:\s*true'
+        line: "      nameservers:\n        search: [abc.corp]\n        addresses: [10.80.3.11, 10.70.3.11]"
+        backrefs: false
+      loop: "{{ netplan_files.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+    - name: Apply Netplan configuration
+      become: true
+      ansible.builtin.command:
+        cmd: netplan apply
+      register: netplan_apply
+      changed_when: netplan_apply.rc == 0

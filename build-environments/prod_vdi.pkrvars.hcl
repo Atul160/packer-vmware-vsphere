@@ -1,0 +1,8 @@
+vcenter_server              = "abcadcvdivcn1.abc.corp"
+datacenter                  = "abcADC"
+datastore                   = "abcadcnas11-nfs3-vdivol-contentlibrary1"
+cluster                     = "abcADC-VDICluster4"
+folder                      = "PackerImages"
+network                     = "vl-1815-abc-vdi-wks"
+content_library_iso_source  = "abcADC-ContentLibrary-ProdVDI"
+content_library_destination = "abcADC-ContentLibrary-ProdVDI"
