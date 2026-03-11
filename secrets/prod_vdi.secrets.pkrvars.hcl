@@ -18,5 +18,5 @@
 
 */
 
-vSphere_username = "admapahlazani@take2.abc.corp"
-vSphere_password = "Dibbulallu123~"
+vSphere_username = ""
+vSphere_password = ""
